@@ -66,6 +66,24 @@ function M._process_stdout(data)
   end
 end
 
+function M.send_command(cmd)
+  if not M._state.proc then
+    vim.notify("[pi-traycer] No active pi process", vim.log.levels.ERROR)
+    return false
+  end
+  local json = vim.json.encode(cmd) .. "\n"
+  M._state.proc:write(json)
+  return true
+end
+
+function M.is_connected()
+  return M._state.proc ~= nil
+end
+
+function M.is_streaming()
+  return M._state.is_streaming
+end
+
 function M._reset()
   M._handlers = {}
   M._state = {

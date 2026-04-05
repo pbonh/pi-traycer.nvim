@@ -76,4 +76,70 @@ describe("rpc", function()
       assert.are.equal(1, #events)
     end)
   end)
+
+  describe("event hub", function()
+    it("dispatches to specific handler", function()
+      local received = nil
+      rpc.on("agent_start", function(e) received = e end)
+      rpc._dispatch({ type = "agent_start" })
+      assert.are.equal("agent_start", received.type)
+    end)
+
+    it("dispatches to wildcard handler", function()
+      local received = {}
+      rpc.on("*", function(e) table.insert(received, e) end)
+      rpc._dispatch({ type = "agent_start" })
+      rpc._dispatch({ type = "agent_end" })
+      assert.are.equal(2, #received)
+    end)
+
+    it("supports multiple handlers per event", function()
+      local count = 0
+      rpc.on("agent_start", function() count = count + 1 end)
+      rpc.on("agent_start", function() count = count + 1 end)
+      rpc._dispatch({ type = "agent_start" })
+      assert.are.equal(2, count)
+    end)
+
+    it("removes handler with off()", function()
+      local count = 0
+      local handler = function() count = count + 1 end
+      rpc.on("agent_start", handler)
+      rpc._dispatch({ type = "agent_start" })
+      assert.are.equal(1, count)
+      rpc.off("agent_start", handler)
+      rpc._dispatch({ type = "agent_start" })
+      assert.are.equal(1, count)
+    end)
+  end)
+
+  describe("send_command", function()
+    it("serializes prompt command", function()
+      local written = nil
+      rpc._state.proc = {
+        write = function(_, data) written = data end,
+      }
+      rpc.send_command({ type = "prompt", message = "hello" })
+      local decoded = vim.json.decode(written:sub(1, -2))
+      assert.are.equal("prompt", decoded.type)
+      assert.are.equal("hello", decoded.message)
+      assert.are.equal("\n", written:sub(-1))
+    end)
+
+    it("serializes abort command", function()
+      local written = nil
+      rpc._state.proc = {
+        write = function(_, data) written = data end,
+      }
+      rpc.send_command({ type = "abort" })
+      local decoded = vim.json.decode(written:sub(1, -2))
+      assert.are.equal("abort", decoded.type)
+    end)
+
+    it("returns false when no process", function()
+      rpc._state.proc = nil
+      local ok = rpc.send_command({ type = "prompt", message = "hi" })
+      assert.is_false(ok)
+    end)
+  end)
 end)
