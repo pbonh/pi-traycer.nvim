@@ -66,6 +66,76 @@ function M._process_stdout(data)
   end
 end
 
+local MAX_RESTARTS = 3
+
+function M.start_session(session_name, opts)
+  opts = opts or {}
+  local config = require("pi-traycer.config").get()
+
+  local session_dir = config.pi.session_dir or ".pi/sessions"
+  vim.fn.mkdir(session_dir, "p")
+  local session_file = session_dir .. "/" .. session_name .. ".jsonl"
+
+  local cmd = { "pi", "--mode", "rpc", "--session", session_file }
+  if config.pi.model then
+    table.insert(cmd, "--model")
+    table.insert(cmd, config.pi.model)
+  end
+  if config.pi.thinking then
+    table.insert(cmd, "--thinking")
+    table.insert(cmd, config.pi.thinking)
+  end
+
+  M._state.stdout_buf = ""
+  M._state.session_file = session_file
+
+  M._state.proc = vim.system(cmd, {
+    stdin = true,
+    stdout = function(_, data)
+      if data then
+        vim.schedule(function()
+          M._process_stdout(data)
+        end)
+      end
+    end,
+    stderr = function(_, data)
+      if data and data ~= "" then
+        vim.schedule(function()
+          vim.notify("[pi-traycer] stderr: " .. vim.trim(data), vim.log.levels.DEBUG)
+        end)
+      end
+    end,
+  }, function(result)
+    vim.schedule(function()
+      M._state.proc = nil
+      M._state.is_streaming = false
+      M._dispatch({ type = "process_exit", code = result.code })
+
+      if result.code ~= 0 and M._state.restart_count < MAX_RESTARTS then
+        M._state.restart_count = M._state.restart_count + 1
+        vim.notify(
+          "[pi-traycer] pi crashed (exit " .. result.code .. "), restarting ("
+            .. M._state.restart_count .. "/" .. MAX_RESTARTS .. ")",
+          vim.log.levels.WARN
+        )
+        M.start_session(session_name, opts)
+      elseif result.code ~= 0 then
+        vim.notify("[pi-traycer] pi crashed and max restarts reached", vim.log.levels.ERROR)
+      end
+    end)
+  end)
+
+  return M._state.proc, session_file
+end
+
+function M.stop()
+  if M._state.proc then
+    M._state.proc:kill(15)
+    M._state.proc = nil
+    M._state.is_streaming = false
+  end
+end
+
 function M.send_command(cmd)
   if not M._state.proc then
     vim.notify("[pi-traycer] No active pi process", vim.log.levels.ERROR)
@@ -93,6 +163,16 @@ function M._reset()
     is_streaming = false,
     restart_count = 0,
   }
+end
+
+function M._init_internal_handlers()
+  M.on("agent_start", function()
+    M._state.is_streaming = true
+  end)
+  M.on("agent_end", function()
+    M._state.is_streaming = false
+    M._state.restart_count = 0
+  end)
 end
 
 return M
