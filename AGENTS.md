@@ -22,7 +22,7 @@ This plugin mirrors Traycer's five-step development workflow:
 
 ```
 pi-traycer.nvim/
-├── plugin/pi-traycer.lua          # Entry point — calls setup()
+├── plugin/pi-traycer.lua          # Entry point — load guard and pi check
 ├── lua/pi-traycer/
 │   ├── init.lua                   # setup() and health check
 │   ├── config.lua                 # Default config, merging user opts
@@ -102,7 +102,7 @@ Each line is one JSON object. Event types:
 - **Config access:** Always read config via `require("pi-traycer.config").get()`. Do not cache config in module-level variables.
 - **Buffer/window management:** Create splits with `vim.cmd("vsplit")` or `vim.cmd("split")`. Manipulate buffers with `vim.api.nvim_buf_*` and windows with `vim.api.nvim_win_*`.
 - **UI components:** Use `Snacks.picker()` and `Snacks.input()` for interactive elements. Do not create custom floating windows.
-- **Data persistence:** Epics are stored as JSON at `.pi/plans/{id}.json`. Encode/decode with `vim.fn.json_encode()` / `vim.fn.json_decode()`.
+- **Data persistence:** Epics are stored as JSON at `.pi/plans/{id}.json`. Encode/decode with `vim.json.encode()` / `vim.json.decode()`.
 - **Tests:** Plenary busted framework — `describe`/`it` blocks with `assert.are.equal()`, `assert.is_true()`, etc.
 
 ## Testing & Guardrails
