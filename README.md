@@ -1,5 +1,7 @@
 # pi-traycer.nvim
 
+**This app was entirely vibe-coded. Seriously, this line in the README is the only thing I wrote by hand. Enjoy :-]**
+
 Traycer-like spec-driven development in Neovim using the [pi coding agent](https://github.com/badlogic/pi-mono/tree/main/packages/coding-agent).
 
 Create epics, generate structured implementation plans, track tasks — all without leaving your terminal.
