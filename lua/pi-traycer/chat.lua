@@ -1,7 +1,7 @@
 local M = {}
 
 local MAX_TOOL_OUTPUT_LINES = 20
-local MAX_TOOL_OUTPUT_CHARS = 1500
+local MAX_TOOL_OUTPUT_CHARS = 5000
 
 M._history_buf = nil
 M._input_buf = nil
@@ -37,7 +37,13 @@ function M.format_tool_result(output)
     return { "[done]" }
   end
   if #output > MAX_TOOL_OUTPUT_CHARS then
-    return { "  " .. output:sub(1, MAX_TOOL_OUTPUT_CHARS) .. "  ... (truncated)" }
+    local truncated_lines = vim.split(output:sub(1, MAX_TOOL_OUTPUT_CHARS), "\n")
+    local result = {}
+    for _, line in ipairs(truncated_lines) do
+      table.insert(result, "  " .. line)
+    end
+    table.insert(result, "  ... (truncated)")
+    return result
   end
   local lines = vim.split(output, "\n")
   if #lines > MAX_TOOL_OUTPUT_LINES then
