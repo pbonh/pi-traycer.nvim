@@ -30,13 +30,7 @@ Using [lazy.nvim](https://github.com/folke/lazy.nvim):
 }
 ```
 
-### Pi Extension
-
-Copy the `create_plan` extension to pi's extensions directory:
-
-```bash
-cp extensions/create-plan.ts ~/.pi/agent/extensions/
-```
+The `create_plan` pi agent extension is automatically installed to `~/.pi/agent/extensions/` when the plugin is installed or updated by lazy.nvim.
 
 ## Configuration
 
